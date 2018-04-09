@@ -1,0 +1,435 @@
+---
+title: "Top Tracks of 2017: USA"
+output: html_notebook
+---
+
+https://open.spotify.com/user/spotify/playlist/37i9dQZF1DX7Axsg3uaDZb?si=nlWdcezESwCW5HazmIGi8A
+
+
+### Import necessary libraries
+```{r}
+library(devtools)
+library(stringdist)
+devtools::install_github('charlie86/spotifyr')
+library(spotifyr)
+
+library(ggplot2)
+library(corrplot)
+library(dplyr)
+```
+
+<br/>
+
+# Data Acquisition
+
+### acquisition from API (8 points)
+
+```{r}
+# Set client ID
+Sys.setenv(SPOTIFY_CLIENT_ID = "7cd7c410d1a94e06b4a81e4bda235aa5")
+# Set client ID
+Sys.setenv(SPOTIFY_CLIENT_SECRET = "d11a4598b7ff4b97b055ba53cfc72606")
+
+# Get access token
+access_token <- get_spotify_access_token()
+
+playlist_username <- 'spotify'
+playlist_uris <- c("37i9dQZF1DX7Axsg3uaDZb")
+
+top2017 <- get_playlist_audio_features('spotify', playlist_uris)
+```
+
+<br/>
+
+
+# Data Exploration
+
+```{r}
+glimpse(top2017)
+summary(top2017)
+```
+
+<br/>
+
+# Data Cleaning & Shaping
+
+### Parsing of text (4 points)
+
+Removing some unnecessary columns from the data frame to make the data set easier to parse and work with
+
+```{r}
+top2017 <- subset(top2017, select = -c(playlist_name, playlist_uri, playlist_tracks_url, playlist_num_tracks, snapshot_id, playlist_img, track_uri, album_img, track_added_at, track_preview_url, track_open_spotify_url))
+```
+
+
+### Check for any NAs in the data frame
+
+```{r}
+top2017NAs <- top2017[rowSums(is.na(top2017)) > 0,]
+
+top2017NAs
+```
+
+This is a pretty small and clean data set, and there's no NAs out of the 100 tracks in this playlist.
+
+<br/>
+
+### Normalization/standardization of feature values (4 points)
+
+Convert duration_ms variable into seconds rather than milliseconds and turn loudness from negative to positive since quantitatively the smaller the loudness value louder a song is.
+
+```{r}
+# convert milliseconds to seconds
+top2017$duration_ms <- round(top2017$duration_ms / 1000)
+
+# rename column from 'duration_ms' to just 'duration'
+colnames(top2017)[16] <- "duration"
+
+# change loudness from negative to positive
+top2017$loudness <- - top2017$loudness
+```
+
+<br/>
+
+### Exploratory Data Plots (5 points) & Detection of Outliers (5 points)
+
+Full description of audio features: https://developer.spotify.com/web-api/get-several-audio-features/
+
+```{r}
+# Set ggplot theme
+theme_set(theme_bw())
+```
+
+```{r}
+# Gets outliers for a given column (outliers are 2 standard deviations from the mean)
+# Args: column (vector)
+# Returns the rows of the data frame that are outliers for the given column
+getOutliers <- function(column) {
+  return (top2017[(abs(column - mean(column)) / sd(column)) > 2,])
+}
+```
+
+<br/>
+
+#### Artists with more than one track in the top 100 playlist
+
+```{r}
+top_artists <- group_by(top2017, artist_name)
+top_artists <- summarise(top_artists, count=n())
+top_artists <- arrange(top_artists, desc(count))
+top_artists <- filter(top_artists, count > 1)
+
+ggplot(top_artists, aes(x=reorder(artist_name,count), y=count)) +
+  geom_bar(aes(y=count,fill=artist_name), stat="identity") +
+  coord_flip() +
+  labs(x="Artist Name", y="Number of Tracks", title="Top Artists of 2017") +
+  theme(legend.position="none", plot.title = element_text(size=14, face = "bold"))
+
+```
+
+**Conclusion:** Post Malone, Kendrick Lamar, and Drake were the top artists of 2017
+
+<br/>
+
+#### Danceability describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.
+
+```{r}
+danceability <- top2017$danceability
+
+ggplot(data=top2017, aes(danceability)) + 
+  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.01) +
+  labs(title="Audio Feature: Danceability") +
+  labs(x="Danceability", y="Count") +
+  theme(plot.title = element_text(size=14, face = "bold")) +
+  geom_density(col=2)
+
+
+cat("Mean value of danceability ", mean(danceability))
+
+cat("Number of danceability outliers: ", nrow(getOutliers(danceability)))
+```
+
+**Conclusion:** The more danceable the song, the more popular
+
+<br/>
+
+#### Energy is a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale. Perceptual features contributing to this attribute include dynamic range, perceived loudness, timbre, onset rate, and general entropy.
+
+```{r}
+energy <- top2017$energy
+
+ggplot(data=top2017, aes(energy)) + 
+  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
+  labs(title="Audio Feature: Energy") +
+  labs(x="Energy", y="Count") +
+  theme(plot.title = element_text(size=14, face = "bold")) +
+  geom_density(col=2)
+
+
+cat("Mean value of energy ", mean(energy))
+
+cat("Number of energy outliers: ", nrow(getOutliers(energy)))
+```
+
+**Conclusion:** The distribution of the energy of the top 100 tracks was relatively well dispersed, but mostly mid-to-high energy
+
+<br>
+
+#### Keys of Top Songs
+
+```{r}
+song_keys <- top2017 %>%
+  group_by(key) %>%
+  summarise(n_key = n()) %>%
+  arrange(desc(n_key))
+    
+song_keys$key <- factor(song_keys$key, levels = song_keys$key[order(song_keys$n_key)])
+
+ggplot(song_keys, aes(x = reorder(key,-n_key), y = n_key, fill = reorder(key,-n_key))) +
+  geom_bar(stat = "identity") +
+  labs(title = "Distribution of the Keys of Top Songs", x = "Keys", y = "Count of Keys on the Top 100") +
+  geom_text(aes(label=n_key), position = position_stack(vjust = 0.8)) +
+  theme(plot.title = element_text(size=14, face="bold"), axis.title = element_text(size=12)) +
+  theme(legend.title=element_blank())
+
+```
+
+**Conclusion:** The most common key among the top 100 tracks of 2017 was C# (which is surprising!)
+
+<br>
+
+#### The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typical range between -60 and 0 db.
+
+Note: I've inverted the loudness values from negative to positive
+
+```{r}
+loudness <- top2017$loudness
+
+ggplot(top2017) +
+  geom_density(aes(loudness, fill ="loudness")) + 
+  scale_x_continuous(name = "Loudness") +
+  scale_y_continuous(name = "Density") +
+  ggtitle("Density plot of Loudness") +
+  theme(plot.title = element_text(size = 14, face = "bold"),
+        text = element_text(size = 12)) +
+  theme(legend.title=element_blank()) +
+  scale_fill_brewer(palette="Accent")
+
+
+cat("Mean value of loudness ", mean(loudness))
+
+cat("Number of loudness outliers: ", nrow(getOutliers(loudness)))
+```
+
+**Conclusion:** The Top 100 Songs are mostly not so loud.
+
+<br>
+
+
+#### Mode indicates the modality (major or minor) of a track, the type of scale from which its melodic content is derived. Major is represented by 1 and minor is 0.
+
+```{r}
+ggplot(data=top2017, aes(top2017$mode, ..count..)) + 
+  geom_bar(stat="count", fill="dodgerblue", width=0.5) +
+  labs(title="Major vs Minor Tracks") +
+  labs(x="Mode", y="Count") +
+  theme(plot.title = element_text(size=14, face = "bold"))
+```
+
+**Conclusion:** Major key tracks are preferred over minor key tracks. This is expected, since major key sounds happier than minor key.
+
+<br>
+
+#### Speechiness detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. 
+
+```{r}
+speechiness <- top2017$speechiness
+
+ggplot(data=top2017, aes(speechiness)) + 
+  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
+  labs(title="Audio Feature: Speechiness") +
+  labs(x="Speechiness", y="Count") +
+  theme(plot.title = element_text(size=14, face = "bold")) +
+  geom_density(col=2)
+
+
+cat("Mean value of speechiness ", mean(speechiness))
+
+cat("Number of speechiness outliers: ", nrow(getOutliers(speechiness)))
+```
+
+**Conclusion:** The top 100 tracks of 2017 were mostly not very speechy
+
+<br>
+
+#### Acousticness is a confidence measure from 0.0 to 1.0 of whether the track is acoustic. 1.0 represents high confidence the track is acoustic.
+
+```{r}
+acousticness <- top2017$acousticness
+
+ggplot(data=top2017, aes(acousticness)) + 
+  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
+  labs(title="Audio Feature: Acousticness") +
+  labs(x="Acousticness", y="Count") +
+  theme(plot.title = element_text(size=14, face = "bold")) +
+  geom_density(col=2)
+
+
+cat("Mean value of acousticness ", mean(acousticness))
+
+cat("Number of acousticness outliers: ", nrow(getOutliers(acousticness)))
+```
+
+**Conclusion:** The top 100 tracks of 2017 were mostly not very acoustic. People don't stream acoustic songs as much as non-acoustic ones.
+
+<br>
+
+#### Liveness detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
+
+```{r}
+liveness <- top2017$liveness
+
+ggplot(data=top2017, aes(liveness)) + 
+  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.01) +
+  labs(title="Audio Feature: Liveness") +
+  labs(x="Liveness", y="Count") +
+  theme(plot.title = element_text(size=14, face = "bold")) +
+  geom_density(col=2)
+
+
+cat("Mean value of liveness ", mean(liveness))
+
+cat("Number of liveness outliers: ", nrow(getOutliers(liveness)))
+```
+
+**Conclusion:** As expected, the mean value of liveness was very low, at 0.15. People go to concerts to listen to live music, not spotify.
+
+<br>
+
+
+#### Valence is measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).
+
+```{r}
+valence <- top2017$valence
+
+ggplot(data=top2017, aes(valence)) + 
+  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
+  labs(title="Audio Feature: Valence") +
+  labs(x="Valence", y="Count") +
+  theme(plot.title = element_text(size=14, face = "bold")) +
+  geom_density(col=2)
+
+
+cat("Mean value of valence ", mean(valence))
+
+cat("Number of valence outliers: ", nrow(getOutliers(valence)))
+```
+
+
+**Conclusion:** Happy and sad songs are actually pretty evenly distributed at 0.473. The distribution of happy and sad songs is pretty even.
+
+<br>
+
+
+#### Tempo is the overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
+
+```{r}
+tempo <- top2017$tempo
+
+ggplot(data=top2017, aes(tempo)) + 
+  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 10) +
+  labs(title="Audio Feature: Tempo") +
+  labs(x="Tempo", y="Count") +
+  theme(plot.title = element_text(size=14, face = "bold"))
+
+
+cat("Mean value of tempo ", mean(tempo))
+
+cat("Number of tempo outliers: ", nrow(getOutliers(tempo)))
+```
+
+
+**Conclusion:** The most popular tempo ranges between 100 BPM And 150 BPM.
+
+<br>
+
+
+#### The duration of the track in seconds
+
+```{r}
+duration <- top2017$duration
+
+ggplot(data=top2017, aes(duration)) + 
+  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 5) +
+  labs(title="Audio Feature: Duration") +
+  labs(x="Duration", y="Count") +
+  theme(plot.title = element_text(size=14, face = "bold"))
+
+
+cat("Mean value of duration ", mean(duration))
+
+cat("Number of duration outliers: ", nrow(getOutliers(duration)))
+
+```
+
+**Conclusion:** The mean duration of the top 100 tracks is 221 seconds, which is about 3 minutes and 41 seconds (3:41).
+
+
+<br>
+
+
+#### Correlation/collinearity analysis (5 points)
+
+In order to understand the correlation between variables, I’ll use corrplot function, which is one of the base data visualization functions.
+```{r}
+spotify_data_num <- subset(top2017, select = -c(track_name, artist_name, album_name, key, mode, key_mode))
+mtCor <- cor(spotify_data_num)
+corrplot(mtCor, method = "ellipse", type = "upper", tl.srt = 45)
+```
+
+It seems like `speechiness` and `loudness` are positively correlated with each other.
+
+Also, `valence` is positively correlated with `danceability` and `energy`. Considering happy songs make people energetic and want to dance, the correlation make a lot of sense.
+
+Interestingly, `energy` and `loudness` are negatively correlated with a really low level.
+
+
+#### We’ve already determined that energy,valence and danceability are positively correlated; but this time, let’s see how these variables are distributed over 100 songs.
+
+```{r}
+ggplot(top2017) +
+  geom_density(aes(energy, fill="energy", alpha = 0.1)) + 
+  geom_density(aes(valence, fill="valence", alpha = 0.1)) + 
+  geom_density(aes(danceability, fill="danceability", alpha = 0.1)) + 
+  scale_x_continuous(name="Energy, Valence and Danceability") +
+  scale_y_continuous(name="Density") +
+  ggtitle("Density plot of Energy, Valence and Danceability") +
+  theme_bw() +
+  theme(plot.title = element_text(size=14, face="bold"),
+        text = element_text(size=12)) +
+  theme(legend.title=element_blank()) +
+  scale_fill_brewer(palette="Pastel1")
+
+```
+
+
+### Understanding the Most Important Factor
+In order to understand what makes Number 1 song better than the Number 100, I’ll add a “standings” column to the dataset, and look into the features that differentiates the best of the top songs lists from the rest of the list.
+
+```{r}
+library(rpart)
+library(rpart.plot)
+spotify_data_num$standing <- c(1:100)
+tree_model <- rpart(standing ~ ., data = spotify_data_num)
+rpart.plot(tree_model, box.palette = "GnBu")
+
+```
+
+# Data Storage and Retrieval
+
+
+# Model Construction and Evaluation
+
+
+
+
