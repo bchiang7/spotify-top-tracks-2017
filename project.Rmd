@@ -1,30 +1,20 @@
 ---
-title: "Top Tracks of 2017: USA"
+title: "Top Tracks of 2017"
 output: html_notebook
 ---
 
-https://open.spotify.com/user/spotify/playlist/37i9dQZF1DX7Axsg3uaDZb?si=nlWdcezESwCW5HazmIGi8A
-
-
-### Import necessary libraries
-```{r}
-library(devtools)
-library(stringdist)
-devtools::install_github('charlie86/spotifyr')
-library(spotifyr)
-
-library(ggplot2)
-library(corrplot)
-library(dplyr)
-```
-
-<br/>
+[Spotify's Top Tracks of 2017](https://open.spotify.com/user/spotify/playlist/37i9dQZF1DX7Axsg3uaDZb?si=nlWdcezESwCW5HazmIGi8A)
 
 # Data Acquisition
 
 ### acquisition from API (8 points)
 
 ```{r}
+library(devtools)
+library(stringdist)
+# devtools::install_github('charlie86/spotifyr')
+library(spotifyr)
+
 # Set client ID
 Sys.setenv(SPOTIFY_CLIENT_ID = "7cd7c410d1a94e06b4a81e4bda235aa5")
 # Set client ID
@@ -36,15 +26,28 @@ access_token <- get_spotify_access_token()
 playlist_username <- 'spotify'
 playlist_uris <- c("37i9dQZF1DX7Axsg3uaDZb")
 
-top2017 <- get_playlist_audio_features('spotify', playlist_uris)
+data <- get_playlist_audio_features('spotify', playlist_uris)
+
+write.csv(data, "top2017playlist.csv")
 ```
 
 <br/>
+
+### acquisition from a file (4 points)
+```{r}
+top2017 <- read.csv("top2017playlist.csv", header=TRUE, sep=",")
+colnames(top2017)[1] <- "rank"
+```
+
 
 
 # Data Exploration
 
 ```{r}
+library(ggplot2)
+library(corrplot)
+library(dplyr)
+
 glimpse(top2017)
 summary(top2017)
 ```
@@ -76,14 +79,14 @@ This is a pretty small and clean data set, and there's no NAs out of the 100 tra
 
 ### Normalization/standardization of feature values (4 points)
 
-Convert duration_ms variable into seconds rather than milliseconds and turn loudness from negative to positive since quantitatively the smaller the loudness value louder a song is.
+Convert `duration_ms` variable into seconds rather than milliseconds and turn loudness from negative to positive since quantitatively the smaller the loudness value louder a song is.
 
 ```{r}
 # convert milliseconds to seconds
 top2017$duration_ms <- round(top2017$duration_ms / 1000)
 
 # rename column from 'duration_ms' to just 'duration'
-colnames(top2017)[16] <- "duration"
+colnames(top2017)[17] <- "duration"
 
 # change loudness from negative to positive
 top2017$loudness <- - top2017$loudness
@@ -114,6 +117,7 @@ getOutliers <- function(column) {
 #### Artists with more than one track in the top 100 playlist
 
 ```{r}
+# group together artists
 top_artists <- group_by(top2017, artist_name)
 top_artists <- summarise(top_artists, count=n())
 top_artists <- arrange(top_artists, desc(count))
@@ -123,7 +127,7 @@ ggplot(top_artists, aes(x=reorder(artist_name,count), y=count)) +
   geom_bar(aes(y=count,fill=artist_name), stat="identity") +
   coord_flip() +
   labs(x="Artist Name", y="Number of Tracks", title="Top Artists of 2017") +
-  theme(legend.position="none", plot.title = element_text(size=14, face = "bold"))
+  theme(legend.position="none", plot.title = element_text(size=14, face="bold"))
 
 ```
 
@@ -137,14 +141,14 @@ ggplot(top_artists, aes(x=reorder(artist_name,count), y=count)) +
 danceability <- top2017$danceability
 
 ggplot(data=top2017, aes(danceability)) + 
-  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.01) +
+  geom_histogram(fill="dodgerblue", col=I("white"), binwidth=0.01) +
   labs(title="Audio Feature: Danceability") +
   labs(x="Danceability", y="Count") +
-  theme(plot.title = element_text(size=14, face = "bold")) +
+  theme(plot.title = element_text(size=14, face="bold")) +
   geom_density(col=2)
 
 
-cat("Mean value of danceability ", mean(danceability))
+cat("Mean value of danceability: ", mean(danceability))
 
 cat("Number of danceability outliers: ", nrow(getOutliers(danceability)))
 ```
@@ -162,11 +166,11 @@ ggplot(data=top2017, aes(energy)) +
   geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
   labs(title="Audio Feature: Energy") +
   labs(x="Energy", y="Count") +
-  theme(plot.title = element_text(size=14, face = "bold")) +
+  theme(plot.title = element_text(size=14, face="bold")) +
   geom_density(col=2)
 
 
-cat("Mean value of energy ", mean(energy))
+cat("Mean value of energy: ", mean(energy))
 
 cat("Number of energy outliers: ", nrow(getOutliers(energy)))
 ```
@@ -210,13 +214,13 @@ ggplot(top2017) +
   scale_x_continuous(name = "Loudness") +
   scale_y_continuous(name = "Density") +
   ggtitle("Density plot of Loudness") +
-  theme(plot.title = element_text(size = 14, face = "bold"),
+  theme(plot.title = element_text(size = 14, face="bold"),
         text = element_text(size = 12)) +
   theme(legend.title=element_blank()) +
   scale_fill_brewer(palette="Accent")
 
 
-cat("Mean value of loudness ", mean(loudness))
+cat("Mean value of loudness: ", mean(loudness))
 
 cat("Number of loudness outliers: ", nrow(getOutliers(loudness)))
 ```
@@ -233,7 +237,7 @@ ggplot(data=top2017, aes(top2017$mode, ..count..)) +
   geom_bar(stat="count", fill="dodgerblue", width=0.5) +
   labs(title="Major vs Minor Tracks") +
   labs(x="Mode", y="Count") +
-  theme(plot.title = element_text(size=14, face = "bold"))
+  theme(plot.title = element_text(size=14, face="bold"))
 ```
 
 **Conclusion:** Major key tracks are preferred over minor key tracks. This is expected, since major key sounds happier than minor key.
@@ -249,16 +253,16 @@ ggplot(data=top2017, aes(speechiness)) +
   geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
   labs(title="Audio Feature: Speechiness") +
   labs(x="Speechiness", y="Count") +
-  theme(plot.title = element_text(size=14, face = "bold")) +
+  theme(plot.title = element_text(size=14, face="bold")) +
   geom_density(col=2)
 
 
-cat("Mean value of speechiness ", mean(speechiness))
+cat("Mean value of speechiness: ", mean(speechiness))
 
 cat("Number of speechiness outliers: ", nrow(getOutliers(speechiness)))
 ```
 
-**Conclusion:** The top 100 tracks of 2017 were mostly not very speechy
+**Conclusion:** The top 100 tracks of 2017 did not contain many spoken words
 
 <br>
 
@@ -271,11 +275,11 @@ ggplot(data=top2017, aes(acousticness)) +
   geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
   labs(title="Audio Feature: Acousticness") +
   labs(x="Acousticness", y="Count") +
-  theme(plot.title = element_text(size=14, face = "bold")) +
+  theme(plot.title = element_text(size=14, face="bold")) +
   geom_density(col=2)
 
 
-cat("Mean value of acousticness ", mean(acousticness))
+cat("Mean value of acousticness: ", mean(acousticness))
 
 cat("Number of acousticness outliers: ", nrow(getOutliers(acousticness)))
 ```
@@ -293,11 +297,11 @@ ggplot(data=top2017, aes(liveness)) +
   geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.01) +
   labs(title="Audio Feature: Liveness") +
   labs(x="Liveness", y="Count") +
-  theme(plot.title = element_text(size=14, face = "bold")) +
+  theme(plot.title = element_text(size=14, face="bold")) +
   geom_density(col=2)
 
 
-cat("Mean value of liveness ", mean(liveness))
+cat("Mean value of liveness: ", mean(liveness))
 
 cat("Number of liveness outliers: ", nrow(getOutliers(liveness)))
 ```
@@ -316,17 +320,17 @@ ggplot(data=top2017, aes(valence)) +
   geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
   labs(title="Audio Feature: Valence") +
   labs(x="Valence", y="Count") +
-  theme(plot.title = element_text(size=14, face = "bold")) +
+  theme(plot.title = element_text(size=14, face="bold")) +
   geom_density(col=2)
 
 
-cat("Mean value of valence ", mean(valence))
+cat("Mean value of valence: ", mean(valence))
 
 cat("Number of valence outliers: ", nrow(getOutliers(valence)))
 ```
 
 
-**Conclusion:** Happy and sad songs are actually pretty evenly distributed at 0.473. The distribution of happy and sad songs is pretty even.
+**Conclusion:** Happy and sad songs are actually pretty normally distributed at 0.473. The distribution of happy and sad songs is pretty even.
 
 <br>
 
@@ -334,22 +338,89 @@ cat("Number of valence outliers: ", nrow(getOutliers(valence)))
 #### Tempo is the overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
 
 ```{r}
-tempo <- top2017$tempo
+tempo <- as.numeric(as.character(top2017$tempo))
 
 ggplot(data=top2017, aes(tempo)) + 
   geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 10) +
   labs(title="Audio Feature: Tempo") +
   labs(x="Tempo", y="Count") +
-  theme(plot.title = element_text(size=14, face = "bold"))
+  theme(plot.title = element_text(size=14, face="bold"))
 
 
-cat("Mean value of tempo ", mean(tempo))
+cat("Mean value of tempo: ", mean(tempo))
 
 cat("Number of tempo outliers: ", nrow(getOutliers(tempo)))
 ```
 
 
-**Conclusion:** The most popular tempo ranges between 100 BPM And 150 BPM.
+**Conclusion:** The most popular tempo of a track generally ranges between 100 BPM And 150 BPM.
+
+<br>
+
+[Tempo Markings](https://en.wikipedia.org/wiki/Tempo)
+
+* Grave – very slow (25–45 bpm)
+* Largo – broadly (40–60 bpm)
+* Larghetto – rather broadly (60–66 bpm)
+* Adagio – slowly with great expression (66–76 bpm)
+* Andante – at a walking pace (76–108 bpm)
+* Moderato – at a moderate speed (108–120 bpm)
+* Allegro – fast, quickly, and bright (120–156 bpm)
+* Vivace – lively and fast (156–176 bpm)
+* Presto – very, very fast (176–200 bpm)
+* Prestissimo – even faster than presto (200 bpm and over)
+
+<br>
+
+#### feature engineering: new derived features (4 points)
+
+```{r}
+# add a new column called tempo_marking based on grouping above
+
+assignTempoMarking <- function(x) {
+  tempo <- as.numeric(as.character(x['tempo']))
+  
+  if (tempo > 25 & tempo < 45) {
+    return("grave")
+  } else if (tempo > 40 & tempo < 60) {
+    return("largo")
+  } else if (tempo > 60 & tempo < 66) {
+    return("larghetto")
+  } else if (tempo > 66 & tempo < 76) {
+    return("adagio")
+  } else if (tempo > 76 & tempo < 108) {
+    return("andante")
+  } else if (tempo > 108 & tempo < 120) {
+    return("moderato")
+  } else if (tempo > 120 & tempo < 156) {
+    return("allegro")
+  } else if (tempo > 156 & tempo < 176) {
+    return("vivace")
+  } else if (tempo > 176 & tempo < 200) {
+    return("presto")
+  } else if (tempo > 200) {
+    return("prestissimo")
+  }
+}
+
+top2017$tempo_marking <- apply(top2017, 1, assignTempoMarking)
+```
+
+
+```{r}
+# group tempo markings
+markings <- top2017 %>%
+  group_by(tempo_marking) %>%
+  summarise(n_marking = n()) %>%
+  arrange(desc(n_marking))
+
+ggplot(markings, aes(x = tempo_marking, y = n_marking, fill = tempo_marking)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Tempo Classification", x = "Classification", y = "Count") +
+  theme(plot.title = element_text(size=14, face="bold"), axis.title = element_text(size=12)) +
+  theme(legend.title=element_blank())
+```
+**Conclusion:** The most popular tempo classifications were allegro and andante (76-156 BPM)
 
 <br>
 
@@ -363,17 +434,40 @@ ggplot(data=top2017, aes(duration)) +
   geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 5) +
   labs(title="Audio Feature: Duration") +
   labs(x="Duration", y="Count") +
-  theme(plot.title = element_text(size=14, face = "bold"))
+  theme(plot.title = element_text(size=14, face="bold"))
 
 
-cat("Mean value of duration ", mean(duration))
+cat("Mean value of duration: ", mean(duration))
 
 cat("Number of duration outliers: ", nrow(getOutliers(duration)))
 
 ```
 
-**Conclusion:** The mean duration of the top 100 tracks is 221 seconds, which is about 3 minutes and 41 seconds (3:41).
+**Conclusion:** The mean duration of the top 100 tracks is 221 seconds, which is about 3 minutes and 41 seconds (3:41). People don't like songs that are too long.
 
+
+<br>
+
+
+#### Time Signature: An estimated overall time signature of a track. The time signature (meter) is a notational convention to specify how many beats are in each bar (or measure).
+
+```{r}
+time_signature <- top2017$time_signature
+
+ggplot(data=top2017, aes(time_signature, ..count..)) + 
+  geom_bar(stat="count", fill="dodgerblue", width=0.5) +
+  labs(title="Audio Feature: Time Signature") +
+  labs(x="Time Signature", y="Count") +
+  theme(plot.title = element_text(size=14, face="bold"))
+
+
+cat("Mean value of time signature: ", mean(time_signature))
+
+cat("Number of time signature outliers: ", nrow(getOutliers(time_signature)))
+
+```
+
+**Conclusion:** The majority of top 100 tracks are in a 4/4 time signature.
 
 <br>
 
@@ -382,25 +476,26 @@ cat("Number of duration outliers: ", nrow(getOutliers(duration)))
 
 In order to understand the correlation between variables, I’ll use corrplot function, which is one of the base data visualization functions.
 ```{r}
-spotify_data_num <- subset(top2017, select = -c(track_name, artist_name, album_name, key, mode, key_mode))
-mtCor <- cor(spotify_data_num)
-corrplot(mtCor, method = "ellipse", type = "upper", tl.srt = 45)
+top2017numeric <- subset(top2017, select = -c(rank, track_name, artist_name, album_name, key, mode, key_mode, tempo_marking))
+corNumeric <- cor(top2017numeric)
+corrplot(corNumeric, method="ellipse", type="upper", tl.srt=45)
 ```
 
-It seems like `speechiness` and `loudness` are positively correlated with each other.
+It looks like `speechiness` and `loudness` are positively correlated with each other.
 
-Also, `valence` is positively correlated with `danceability` and `energy`. Considering happy songs make people energetic and want to dance, the correlation make a lot of sense.
+Also, `valence` is positively correlated with `danceability` and `energy`. Considering happy songs make people energetic and want to dance, the correlation obviously makes sense.
 
-Interestingly, `energy` and `loudness` are negatively correlated with a really low level.
+Interestingly enough, `energy` and `loudness` are very negatively correlated.
 
+<br>
 
-#### We’ve already determined that energy,valence and danceability are positively correlated; but this time, let’s see how these variables are distributed over 100 songs.
+#### As seen above, energy, valence, and danceability are positively correlated. Let’s see how these variables are distributed over 100 songs.
 
 ```{r}
 ggplot(top2017) +
-  geom_density(aes(energy, fill="energy", alpha = 0.1)) + 
-  geom_density(aes(valence, fill="valence", alpha = 0.1)) + 
-  geom_density(aes(danceability, fill="danceability", alpha = 0.1)) + 
+  geom_density(aes(energy, fill="energy", alpha=0.1)) + 
+  geom_density(aes(valence, fill="valence", alpha=0.1)) + 
+  geom_density(aes(danceability, fill="danceability", alpha=0.1)) + 
   scale_x_continuous(name="Energy, Valence and Danceability") +
   scale_y_continuous(name="Density") +
   ggtitle("Density plot of Energy, Valence and Danceability") +
@@ -412,24 +507,60 @@ ggplot(top2017) +
 
 ```
 
+<br>
 
 ### Understanding the Most Important Factor
 In order to understand what makes Number 1 song better than the Number 100, I’ll add a “standings” column to the dataset, and look into the features that differentiates the best of the top songs lists from the rest of the list.
 
 ```{r}
-library(rpart)
-library(rpart.plot)
-spotify_data_num$standing <- c(1:100)
-tree_model <- rpart(standing ~ ., data = spotify_data_num)
-rpart.plot(tree_model, box.palette = "GnBu")
-
+# library(rpart)
+# library(rpart.plot)
+# spotify_data_num$standing <- c(1:100)
+# tree_model <- rpart(standing ~ ., data = spotify_data_num)
+# rpart.plot(tree_model, box.palette = "GnBu")
 ```
+
+
+<br>
 
 # Data Storage and Retrieval
 
 
+data stored in a relational database (2 points)
+
+```{r}
+library(RMySQL)
+
+mydb = dbConnect(MySQL(), user='user', password='password', dbname='database_name', host='host')
+
+```
+
+
+multiple tables or objects in database (2 points)
+
+simple retrieval mechanism (5 points)
+
+
+
 # Model Construction and Evaluation
 
+training & validation subsets (5 points)
+
+multiple linear regression model (7 points)
+
+logistic regression model (7 points)
+
+kNN model for regression or classification (7 points)
+
+Naive Bayes for classification (7 points)
 
 
+Decision tree or CART/Random Forest (7 points)
+
+
+evaluation of fit of model (5 points)
+
+comparison of models (5 points)
+
+interpretation of results/prediction with interval (5 points)
 
