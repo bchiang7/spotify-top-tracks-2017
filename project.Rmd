@@ -7,7 +7,7 @@ output: html_notebook
 
 # Data Acquisition
 
-### acquisition from API (8 points)
+## acquisition from API (8 points)
 
 ```{r}
 library(devtools)
@@ -33,9 +33,9 @@ write.csv(data, "top2017playlist.csv")
 
 <br/>
 
-### acquisition from a file (4 points)
+## acquisition from a file (4 points)
 ```{r}
-top2017 <- read.csv("top2017playlist.csv", header=TRUE, sep=",")
+top2017 <- read.csv("top2017playlist.csv", header = TRUE, sep = ",")
 colnames(top2017)[1] <- "rank"
 ```
 
@@ -45,7 +45,6 @@ colnames(top2017)[1] <- "rank"
 
 ```{r}
 library(ggplot2)
-library(corrplot)
 library(dplyr)
 
 glimpse(top2017)
@@ -56,7 +55,7 @@ summary(top2017)
 
 # Data Cleaning & Shaping
 
-### Parsing of text (4 points)
+## Parsing of text (4 points)
 
 Removing some unnecessary columns from the data frame to make the data set easier to parse and work with
 
@@ -65,7 +64,7 @@ top2017 <- subset(top2017, select = -c(playlist_name, playlist_uri, playlist_tra
 ```
 
 
-### Check for any NAs in the data frame
+## Check for any NAs in the data frame
 
 ```{r}
 top2017NAs <- top2017[rowSums(is.na(top2017)) > 0,]
@@ -77,7 +76,7 @@ This is a pretty small and clean data set, and there's no NAs out of the 100 tra
 
 <br/>
 
-### Normalization/standardization of feature values (4 points)
+## Normalization/standardization of feature values (4 points)
 
 Convert `duration_ms` variable into seconds rather than milliseconds and turn loudness from negative to positive since quantitatively the smaller the loudness value louder a song is.
 
@@ -94,7 +93,7 @@ top2017$loudness <- - top2017$loudness
 
 <br/>
 
-### Exploratory Data Plots (5 points) & Detection of Outliers (5 points)
+## Exploratory Data Plots (5 points) & Detection of Outliers (5 points)
 
 Full description of audio features: https://developer.spotify.com/web-api/get-several-audio-features/
 
@@ -119,15 +118,15 @@ getOutliers <- function(column) {
 ```{r}
 # group together artists
 top_artists <- group_by(top2017, artist_name)
-top_artists <- summarise(top_artists, count=n())
+top_artists <- summarise(top_artists, count = n())
 top_artists <- arrange(top_artists, desc(count))
 top_artists <- filter(top_artists, count > 1)
 
-ggplot(top_artists, aes(x=reorder(artist_name,count), y=count)) +
-  geom_bar(aes(y=count,fill=artist_name), stat="identity") +
+ggplot(top_artists, aes(x = reorder(artist_name,count), y = count)) +
+  geom_bar(aes(y = count, fill = artist_name), stat = "identity") +
   coord_flip() +
-  labs(x="Artist Name", y="Number of Tracks", title="Top Artists of 2017") +
-  theme(legend.position="none", plot.title = element_text(size=14, face="bold"))
+  labs(x = "Artist Name", y = "Number of Tracks", title = "Top Artists of 2017") +
+  theme(legend.position = "none", plot.title = element_text(size = 14, face = "bold"))
 
 ```
 
@@ -135,17 +134,18 @@ ggplot(top_artists, aes(x=reorder(artist_name,count), y=count)) +
 
 <br/>
 
-#### Danceability describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.
+### Danceability 
+Describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.
 
 ```{r}
 danceability <- top2017$danceability
 
 ggplot(data=top2017, aes(danceability)) + 
-  geom_histogram(fill="dodgerblue", col=I("white"), binwidth=0.01) +
-  labs(title="Audio Feature: Danceability") +
-  labs(x="Danceability", y="Count") +
-  theme(plot.title = element_text(size=14, face="bold")) +
-  geom_density(col=2)
+  geom_histogram(fill = "dodgerblue", col = I("white"), binwidth = 0.01) +
+  labs(title = "Audio Feature: Danceability") +
+  labs(x = "Danceability", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold")) +
+  geom_density(col = 2)
 
 
 cat("Mean value of danceability: ", mean(danceability))
@@ -157,17 +157,18 @@ cat("Number of danceability outliers: ", nrow(getOutliers(danceability)))
 
 <br/>
 
-#### Energy is a measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale. Perceptual features contributing to this attribute include dynamic range, perceived loudness, timbre, onset rate, and general entropy.
+### Energy
+A measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale. Perceptual features contributing to this attribute include dynamic range, perceived loudness, timbre, onset rate, and general entropy.
 
 ```{r}
 energy <- top2017$energy
 
 ggplot(data=top2017, aes(energy)) + 
-  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
-  labs(title="Audio Feature: Energy") +
-  labs(x="Energy", y="Count") +
-  theme(plot.title = element_text(size=14, face="bold")) +
-  geom_density(col=2)
+  geom_histogram(fill = "dodgerblue", col = I("white"), binwidth = 0.02) +
+  labs(title = "Audio Feature: Energy") +
+  labs(x = "Energy", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold")) +
+  geom_density(col = 2)
 
 
 cat("Mean value of energy: ", mean(energy))
@@ -179,7 +180,7 @@ cat("Number of energy outliers: ", nrow(getOutliers(energy)))
 
 <br>
 
-#### Keys of Top Songs
+### Keys of Top Songs
 
 ```{r}
 song_keys <- top2017 %>%
@@ -192,9 +193,9 @@ song_keys$key <- factor(song_keys$key, levels = song_keys$key[order(song_keys$n_
 ggplot(song_keys, aes(x = reorder(key,-n_key), y = n_key, fill = reorder(key,-n_key))) +
   geom_bar(stat = "identity") +
   labs(title = "Distribution of the Keys of Top Songs", x = "Keys", y = "Count of Keys on the Top 100") +
-  geom_text(aes(label=n_key), position = position_stack(vjust = 0.8)) +
-  theme(plot.title = element_text(size=14, face="bold"), axis.title = element_text(size=12)) +
-  theme(legend.title=element_blank())
+  geom_text(aes(label = n_key), position = position_stack(vjust = 0.8)) +
+  theme(plot.title = element_text(size = 14, face = "bold"), axis.title = element_text(size=12)) +
+  theme(legend.title = element_blank())
 
 ```
 
@@ -202,7 +203,8 @@ ggplot(song_keys, aes(x = reorder(key,-n_key), y = n_key, fill = reorder(key,-n_
 
 <br>
 
-#### The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typical range between -60 and 0 db.
+### Loudness
+The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typical range between -60 and 0 db.
 
 Note: I've inverted the loudness values from negative to positive
 
@@ -210,14 +212,14 @@ Note: I've inverted the loudness values from negative to positive
 loudness <- top2017$loudness
 
 ggplot(top2017) +
-  geom_density(aes(loudness, fill ="loudness")) + 
+  geom_density(aes(loudness, fill = "loudness")) + 
   scale_x_continuous(name = "Loudness") +
   scale_y_continuous(name = "Density") +
   ggtitle("Density plot of Loudness") +
-  theme(plot.title = element_text(size = 14, face="bold"),
+  theme(plot.title = element_text(size = 14, face = "bold"),
         text = element_text(size = 12)) +
-  theme(legend.title=element_blank()) +
-  scale_fill_brewer(palette="Accent")
+  theme(legend.title = element_blank()) +
+  scale_fill_brewer(palette = "Accent")
 
 
 cat("Mean value of loudness: ", mean(loudness))
@@ -230,31 +232,33 @@ cat("Number of loudness outliers: ", nrow(getOutliers(loudness)))
 <br>
 
 
-#### Mode indicates the modality (major or minor) of a track, the type of scale from which its melodic content is derived. Major is represented by 1 and minor is 0.
+### Mode 
+Indicates the modality (major or minor) of a track, the type of scale from which its melodic content is derived. Major is represented by 1 and minor is 0.
 
 ```{r}
 ggplot(data=top2017, aes(top2017$mode, ..count..)) + 
-  geom_bar(stat="count", fill="dodgerblue", width=0.5) +
-  labs(title="Major vs Minor Tracks") +
-  labs(x="Mode", y="Count") +
-  theme(plot.title = element_text(size=14, face="bold"))
+  geom_bar(stat = "count", fill = "dodgerblue", width=0.5) +
+  labs(title = "Major vs Minor Tracks") +
+  labs(x = "Mode", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold"))
 ```
 
 **Conclusion:** Major key tracks are preferred over minor key tracks. This is expected, since major key sounds happier than minor key.
 
 <br>
 
-#### Speechiness detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. 
+### Speechiness 
+Detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. 
 
 ```{r}
 speechiness <- top2017$speechiness
 
 ggplot(data=top2017, aes(speechiness)) + 
-  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
-  labs(title="Audio Feature: Speechiness") +
-  labs(x="Speechiness", y="Count") +
-  theme(plot.title = element_text(size=14, face="bold")) +
-  geom_density(col=2)
+  geom_histogram(fill = "dodgerblue", col = I("white"), binwidth = 0.02) +
+  labs(title = "Audio Feature: Speechiness") +
+  labs(x = "Speechiness", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold")) +
+  geom_density(col = 2)
 
 
 cat("Mean value of speechiness: ", mean(speechiness))
@@ -266,17 +270,18 @@ cat("Number of speechiness outliers: ", nrow(getOutliers(speechiness)))
 
 <br>
 
-#### Acousticness is a confidence measure from 0.0 to 1.0 of whether the track is acoustic. 1.0 represents high confidence the track is acoustic.
+### Acousticness 
+A confidence measure from 0.0 to 1.0 of whether the track is acoustic. 1.0 represents high confidence the track is acoustic.
 
 ```{r}
 acousticness <- top2017$acousticness
 
 ggplot(data=top2017, aes(acousticness)) + 
-  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
-  labs(title="Audio Feature: Acousticness") +
-  labs(x="Acousticness", y="Count") +
-  theme(plot.title = element_text(size=14, face="bold")) +
-  geom_density(col=2)
+  geom_histogram(fill = "dodgerblue", col = I("white"), binwidth = 0.02) +
+  labs(title = "Audio Feature: Acousticness") +
+  labs(x = "Acousticness", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold")) +
+  geom_density(col = 2)
 
 
 cat("Mean value of acousticness: ", mean(acousticness))
@@ -288,17 +293,18 @@ cat("Number of acousticness outliers: ", nrow(getOutliers(acousticness)))
 
 <br>
 
-#### Liveness detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
+### Liveness 
+Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
 
 ```{r}
 liveness <- top2017$liveness
 
 ggplot(data=top2017, aes(liveness)) + 
-  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.01) +
-  labs(title="Audio Feature: Liveness") +
-  labs(x="Liveness", y="Count") +
-  theme(plot.title = element_text(size=14, face="bold")) +
-  geom_density(col=2)
+  geom_histogram(fill = "dodgerblue", col = I("white"), binwidth = 0.01) +
+  labs(title = "Audio Feature: Liveness") +
+  labs(x = "Liveness", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold")) +
+  geom_density(col = 2)
 
 
 cat("Mean value of liveness: ", mean(liveness))
@@ -311,17 +317,18 @@ cat("Number of liveness outliers: ", nrow(getOutliers(liveness)))
 <br>
 
 
-#### Valence is measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).
+### Valence 
+A measure from 0.0 to 1.0 describing the musical positiveness conveyed by a track. Tracks with high valence sound more positive (e.g. happy, cheerful, euphoric), while tracks with low valence sound more negative (e.g. sad, depressed, angry).
 
 ```{r}
 valence <- top2017$valence
 
 ggplot(data=top2017, aes(valence)) + 
-  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 0.02) +
-  labs(title="Audio Feature: Valence") +
-  labs(x="Valence", y="Count") +
-  theme(plot.title = element_text(size=14, face="bold")) +
-  geom_density(col=2)
+  geom_histogram(fill = "dodgerblue", col = I("white"), binwidth = 0.02) +
+  labs(title = "Audio Feature: Valence") +
+  labs(x = "Valence", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold")) +
+  geom_density(col = 2)
 
 
 cat("Mean value of valence: ", mean(valence))
@@ -335,16 +342,17 @@ cat("Number of valence outliers: ", nrow(getOutliers(valence)))
 <br>
 
 
-#### Tempo is the overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
+### Tempo 
+The overall estimated tempo of a track in beats per minute (BPM). In musical terminology, tempo is the speed or pace of a given piece and derives directly from the average beat duration.
 
 ```{r}
 tempo <- as.numeric(as.character(top2017$tempo))
 
 ggplot(data=top2017, aes(tempo)) + 
-  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 10) +
-  labs(title="Audio Feature: Tempo") +
-  labs(x="Tempo", y="Count") +
-  theme(plot.title = element_text(size=14, face="bold"))
+  geom_histogram(fill = "dodgerblue", col = I("white"), binwidth = 10) +
+  labs(title = "Audio Feature: Tempo") +
+  labs(x = "Tempo", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold"))
 
 
 cat("Mean value of tempo: ", mean(tempo))
@@ -372,7 +380,7 @@ cat("Number of tempo outliers: ", nrow(getOutliers(tempo)))
 
 <br>
 
-#### feature engineering: new derived features (4 points)
+## feature engineering: new derived features (4 points)
 
 ```{r}
 # add a new column called tempo_marking based on grouping above
@@ -406,6 +414,7 @@ assignTempoMarking <- function(x) {
 top2017$tempo_marking <- apply(top2017, 1, assignTempoMarking)
 ```
 
+Group tempo markings together to plot
 
 ```{r}
 # group tempo markings
@@ -417,24 +426,24 @@ markings <- top2017 %>%
 ggplot(markings, aes(x = tempo_marking, y = n_marking, fill = tempo_marking)) +
   geom_bar(stat = "identity") +
   labs(title = "Tempo Classification", x = "Classification", y = "Count") +
-  theme(plot.title = element_text(size=14, face="bold"), axis.title = element_text(size=12)) +
-  theme(legend.title=element_blank())
+  theme(plot.title = element_text(size = 14, face = "bold"), axis.title = element_text(size=12)) +
+  theme(legend.title = element_blank())
 ```
 **Conclusion:** The most popular tempo classifications were allegro and andante (76-156 BPM)
 
 <br>
 
 
-#### The duration of the track in seconds
+### Duration (in seconds)
 
 ```{r}
 duration <- top2017$duration
 
 ggplot(data=top2017, aes(duration)) + 
-  geom_histogram(fill="dodgerblue", col=I("white"), binwidth = 5) +
-  labs(title="Audio Feature: Duration") +
-  labs(x="Duration", y="Count") +
-  theme(plot.title = element_text(size=14, face="bold"))
+  geom_histogram(fill = "dodgerblue", col = I("white"), binwidth = 5) +
+  labs(title = "Audio Feature: Duration") +
+  labs(x = "Duration", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold"))
 
 
 cat("Mean value of duration: ", mean(duration))
@@ -449,16 +458,17 @@ cat("Number of duration outliers: ", nrow(getOutliers(duration)))
 <br>
 
 
-#### Time Signature: An estimated overall time signature of a track. The time signature (meter) is a notational convention to specify how many beats are in each bar (or measure).
+### Time Signature
+An estimated overall time signature of a track. The time signature (meter) is a notational convention to specify how many beats are in each bar (or measure).
 
 ```{r}
 time_signature <- top2017$time_signature
 
 ggplot(data=top2017, aes(time_signature, ..count..)) + 
-  geom_bar(stat="count", fill="dodgerblue", width=0.5) +
-  labs(title="Audio Feature: Time Signature") +
-  labs(x="Time Signature", y="Count") +
-  theme(plot.title = element_text(size=14, face="bold"))
+  geom_bar(stat = "count", fill = "dodgerblue", width = 0.5) +
+  labs(title = "Audio Feature: Time Signature") +
+  labs(x = "Time Signature", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold"))
 
 
 cat("Mean value of time signature: ", mean(time_signature))
@@ -472,13 +482,26 @@ cat("Number of time signature outliers: ", nrow(getOutliers(time_signature)))
 <br>
 
 
-#### Correlation/collinearity analysis (5 points)
+## Correlation/collinearity analysis (5 points)
 
 In order to understand the correlation between variables, I’ll use corrplot function, which is one of the base data visualization functions.
+
 ```{r}
-top2017numeric <- subset(top2017, select = -c(rank, track_name, artist_name, album_name, key, mode, key_mode, tempo_marking))
+top2017numeric <- subset(top2017, select = -c(rank, track_name, artist_name, album_name, key, mode, time_signature, key_mode, tempo_marking))
+
+# min max normalization for factors not already scaled from 0 to 1
+minmax <- function(x){(x-min(x)) / (max(x)-min(x))}
+
+top2017numeric$loudness <- minmax(top2017numeric$loudness)
+top2017numeric$tempo <- minmax(top2017numeric$tempo)
+top2017numeric$duration <- minmax(top2017numeric$duration)
+```
+
+
+```{r}
+library(corrplot)
 corNumeric <- cor(top2017numeric)
-corrplot(corNumeric, method="ellipse", type="upper", tl.srt=45)
+corrplot(corNumeric, method= "ellipse", type = "upper", tl.srt=45)
 ```
 
 It looks like `speechiness` and `loudness` are positively correlated with each other.
@@ -489,21 +512,21 @@ Interestingly enough, `energy` and `loudness` are very negatively correlated.
 
 <br>
 
-#### As seen above, energy, valence, and danceability are positively correlated. Let’s see how these variables are distributed over 100 songs.
+As seen above, energy, valence, and danceability are positively correlated. Let’s see how these variables are distributed over 100 songs.
 
 ```{r}
 ggplot(top2017) +
-  geom_density(aes(energy, fill="energy", alpha=0.1)) + 
-  geom_density(aes(valence, fill="valence", alpha=0.1)) + 
-  geom_density(aes(danceability, fill="danceability", alpha=0.1)) + 
-  scale_x_continuous(name="Energy, Valence and Danceability") +
-  scale_y_continuous(name="Density") +
+  geom_density(aes(energy, fill = "energy", alpha=0.1)) + 
+  geom_density(aes(valence, fill = "valence", alpha=0.1)) + 
+  geom_density(aes(danceability, fill = "danceability", alpha=0.1)) + 
+  scale_x_continuous(name = "Energy, Valence and Danceability") +
+  scale_y_continuous(name = "Density") +
   ggtitle("Density plot of Energy, Valence and Danceability") +
   theme_bw() +
-  theme(plot.title = element_text(size=14, face="bold"),
-        text = element_text(size=12)) +
-  theme(legend.title=element_blank()) +
-  scale_fill_brewer(palette="Pastel1")
+  theme(plot.title = element_text(size = 14, face = "bold"),
+        text = element_text(size = 12)) +
+  theme(legend.title = element_blank()) +
+  scale_fill_brewer(palette = "Pastel1")
 
 ```
 
@@ -513,11 +536,11 @@ ggplot(top2017) +
 In order to understand what makes Number 1 song better than the Number 100, I’ll add a “standings” column to the dataset, and look into the features that differentiates the best of the top songs lists from the rest of the list.
 
 ```{r}
-# library(rpart)
+library(rpart)
 # library(rpart.plot)
-# spotify_data_num$standing <- c(1:100)
-# tree_model <- rpart(standing ~ ., data = spotify_data_num)
-# rpart.plot(tree_model, box.palette = "GnBu")
+top2017$rank <- c(1:100)
+tree_model <- rpart(rank ~ ., data = top2017)
+plot(tree_model, box.palette = "GnBu")
 ```
 
 
@@ -525,42 +548,242 @@ In order to understand what makes Number 1 song better than the Number 100, I’
 
 # Data Storage and Retrieval
 
-
-data stored in a relational database (2 points)
+## Data stored in a relational database (2 points)
 
 ```{r}
 library(RMySQL)
 
-mydb = dbConnect(MySQL(), user='user', password='password', dbname='database_name', host='host')
+# connect to to MySQL
+db <- dbConnect(MySQL(), user = "username", password = "password", host = "localhost")
 
+# make sure the connection is all set
+summary(db)
+dbGetInfo(db)
 ```
 
 
-multiple tables or objects in database (2 points)
+```{r}
+# create the database
+dbSendQuery(db, "DROP DATABASE IF EXISTS top2017db;")
+dbSendQuery(db, "CREATE DATABASE top2017db;")
 
-simple retrieval mechanism (5 points)
+# tell MySQL to use that database
+dbSendQuery(db, "USE top2017db;")
 
+# reconnect to the database just created
+db <- dbConnect(MySQL(), user = "username", password = "password", host = "localhost", dbname = "top2017db")
+```
+
+
+## Multiple tables or objects in database (2 points)
+
+```{r}
+# clean up tables first
+dbSendQuery(db, "DROP TABLE IF EXISTS top2017, top2017numeric")
+
+# create a table for the top2017 dataframe
+dbWriteTable(db, value = top2017, name = "top2017", overwrite=TRUE)
+
+# create a table for the dataframe containing numeric data
+dbWriteTable(db, value = top2017numeric, name = "top2017numeric", overwrite=TRUE)
+
+# take a look to see that both tables have been added
+dbListTables(db)
+```
+
+
+## Simple retrieval mechanism (5 points)
+
+```{r}
+# retrieve data from the database (will come back as a MySQLResult)
+# and save the results of the query as a data frame
+# The n parameter in the function specifies the number of records to retrieve, using n =-1 retrieves all pending records
+
+res1 <- dbSendQuery(db, "SELECT * FROM top2017;")
+data = fetch(res1, n = -1)
+dbClearResult(res1)
+
+
+res2 <- dbSendQuery(db, "SELECT * FROM top2017numeric;")
+dataNumeric = fetch(res2, n = -1)
+dbClearResult(res2)
+```
+
+
+## Complex joins or selective retrieval mechanism (8 points)
+
+"Joining multiple tables and a filter (WHERE) is a complex join. A complex query would require subqueries, group by, aggregation, etc."
+
+```{r}
+pop <- dbSendQuery(db, "SELECT 
+                        CASE
+                          WHEN track_popularity < 49 then '0 - 49'
+                          WHEN track_popularity between 50 and 59 then '50 - 59'
+                          WHEN track_popularity between 60 and 69 then '60 - 69'
+                          WHEN track_popularity between 70 and 79 then '70 - 79'
+                          WHEN track_popularity between 80 and 89 then '80 - 89'
+                          WHEN track_popularity between 90 and 100 then '90 - 100'
+                          ELSE 'other'
+                        END as `range`, COUNT(*)
+                        FROM top2017 
+                        GROUP BY `range`;")
+
+pop_data <- fetch(pop, n = -1)
+
+pop_data
+
+```
+
+```{r}
+
+# group by mode
+mode <- dbSendQuery(db, "SELECT COUNT(*) as Count, Mode 
+                         FROM top2017 
+                         GROUP BY mode;")
+mode_data <- fetch(mode, n = -1)
+mode_data
+
+# group by key mode
+key_mode <- dbSendQuery(db, "SELECT COUNT(*) as Count, key_mode as KeyMode
+                             FROM top2017 
+                             GROUP BY key_mode;")
+key_mode_data <- fetch(key_mode, n = -1)
+key_mode_data
+
+# group by time signature
+sig <- dbSendQuery(db, "SELECT COUNT(*) as Count, time_signature as TimeSignature 
+                             FROM top2017 
+                             GROUP BY time_signature;")
+sig_data <- fetch(sig, n = -1)
+sig_data
+
+# group by tempo marking
+tempo <- dbSendQuery(db, "SELECT COUNT(*) as Count, tempo_marking as TempoMarking 
+                         FROM top2017 
+                         GROUP BY tempo_marking;")
+tempo_data <- fetch(tempo, n = -1)
+tempo_data
+```
+
+
+
+### Once all data is retrieved, close the connection to the MySQL database
+
+```{r}
+# function to kill DB Connections
+killDbConnections <- lapply(dbListConnections(MySQL()), dbDisconnect)
+
+killDbConnections
+
+on.exit(dbDisconnect(db))
+```
 
 
 # Model Construction and Evaluation
 
-training & validation subsets (5 points)
+## Training & validation subsets (5 points)
 
-multiple linear regression model (7 points)
+```{r}
+# 50% of the sample size
+smp_size <- floor(0.5 * nrow(dataNumeric))
 
-logistic regression model (7 points)
+# set the seed to make your partition reproductible
+set.seed(123)
+train_ind <- sample(seq_len(nrow(dataNumeric)), size = smp_size)
 
-kNN model for regression or classification (7 points)
+# training data set
+train_data <- dataNumeric[train_ind, ]
 
-Naive Bayes for classification (7 points)
+# validation data set (all values not in the training data set)
+test_data <- dataNumeric[-train_ind, ]
+```
 
 
-Decision tree or CART/Random Forest (7 points)
+## Multiple linear regression model (7 points)
+
+Multiple linear regression attempts to model the relationship between two or more explanatory variables and a response variable by fitting a linear equation to observed data. Every value of the independent variable x is associated with a value of the dependent variable y.
+
+Formula for multiple linear regression:  “YVAR ~ XVAR1 + XVAR2 + … + XVARi” where YVAR is the dependent, or predicted, variable and XVAR1, XVAR2, etc. are the independent, or predictor, variables.
+
+```{r}
+# predict the track popularity using all other numeric variables
+
+all_model <- lm(formula = track_popularity ~ danceability + energy + loudness + speechiness + acousticness + instrumentalness + liveness + valence + tempo + duration + time_signature, data = train_data)
+summary(model)
+
+pred <- predict(all_model, train_data)
+plot(pred - (train_data$track_popularity))
+```
+
+With an intercept of 50.7, the regression equation is:
+
+```
+Popularity = (10.6 * danceability) + (13.6 * energy) + (1.3 * loudness) + (-1.2 * speechiness) + (-11.7 * acousticness) + (-44.9 * instrumentalness) + (2.55 * liveness) + (-1.2 * speechiness) + (-1.2 * speechiness) + 
+
+```
+
+```{r}
+model <- rpart(formula = track_popularity ~ danceability + energy + loudness + speechiness + acousticness + instrumentalness + liveness + valence + tempo + time_signature, data = train_data)
+summary(model)
+
+pred <- predict(model, train_data)
+plot(pred - (train_data$track_popularity))
+```
 
 
-evaluation of fit of model (5 points)
+```{r}
+# predict the track popularity using danceability, energy, tempo
+model <- lm(formula = track_popularity ~ danceability + energy + liveness + tempo, data = train_data)
+summary(model)
 
-comparison of models (5 points)
+pred <- predict(model, train_data)
+plot(pred - (train_data$track_popularity))
+```
 
-interpretation of results/prediction with interval (5 points)
+
+
+```{r}
+# let's try to predict the same data that they use at the session
+predict(model, data.frame(danceability = 0.8, energy = 0.9, liveness = 0.1, tempo = 120, instrumentalness = 0000.1))
+```
+
+
+## Logistic regression model (7 points)
+```{r}
+
+```
+
+
+## kNN model for regression or classification (7 points)
+```{r}
+library(class)
+
+
+```
+
+
+## Naive Bayes for classification (7 points)
+```{r}
+
+```
+
+
+
+## evaluation of fit of model (5 points)
+```{r}
+
+```
+
+
+## comparison of models (5 points)
+```{r}
+
+```
+
+
+## interpretation of results/prediction with interval (5 points)
+```{r}
+
+```
+
 
