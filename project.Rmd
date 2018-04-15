@@ -89,7 +89,9 @@ colnames(top2017)[17] <- "duration"
 
 # change loudness from negative to positive
 top2017$loudness <- - top2017$loudness
+
 ```
+
 
 <br/>
 
@@ -482,21 +484,25 @@ cat("Number of time signature outliers: ", nrow(getOutliers(time_signature)))
 <br>
 
 
-## Correlation/collinearity analysis (5 points)
-
-In order to understand the correlation between variables, I’ll use corrplot function, which is one of the base data visualization functions.
+Min-Max Normalization
 
 ```{r}
 top2017numeric <- subset(top2017, select = -c(rank, track_name, artist_name, album_name, key, mode, time_signature, key_mode, tempo_marking))
 
 # min max normalization for factors not already scaled from 0 to 1
-minmax <- function(x){(x-min(x)) / (max(x)-min(x))}
+minmax <- function(x) {
+  (x - min(x)) / (max(x) - min(x))
+}
 
 top2017numeric$loudness <- minmax(top2017numeric$loudness)
 top2017numeric$tempo <- minmax(top2017numeric$tempo)
 top2017numeric$duration <- minmax(top2017numeric$duration)
 ```
 
+
+## Correlation/collinearity analysis (5 points)
+
+In order to understand the correlation between variables, I’ll use corrplot function, which is one of the base data visualization functions.
 
 ```{r}
 library(corrplot)
@@ -705,47 +711,50 @@ Multiple linear regression attempts to model the relationship between two or mor
 
 Formula for multiple linear regression:  “YVAR ~ XVAR1 + XVAR2 + … + XVARi” where YVAR is the dependent, or predicted, variable and XVAR1, XVAR2, etc. are the independent, or predictor, variables.
 
-```{r}
-# predict the track popularity using all other numeric variables
+### predict the track popularity using all other numeric variables
 
-all_model <- lm(formula = track_popularity ~ danceability + energy + loudness + speechiness + acousticness + instrumentalness + liveness + valence + tempo + duration + time_signature, data = train_data)
-summary(model)
+```{r}
+all_model <- lm(formula = track_popularity ~ danceability + energy + loudness + speechiness + acousticness + instrumentalness + liveness + valence + tempo + duration, data = train_data)
+summary(all_model)
 
 pred <- predict(all_model, train_data)
 plot(pred - (train_data$track_popularity))
 ```
 
-With an intercept of 50.7, the regression equation is:
+With an intercept of 63.2, the regression equation is:
 
 ```
-Popularity = (10.6 * danceability) + (13.6 * energy) + (1.3 * loudness) + (-1.2 * speechiness) + (-11.7 * acousticness) + (-44.9 * instrumentalness) + (2.55 * liveness) + (-1.2 * speechiness) + (-1.2 * speechiness) + 
-
+Popularity = (11.04 * danceability) + (13.04 * energy) + (11.4 * loudness) + (-0.04 * speechiness) + (-11.0 * acousticness) + (-41.3 * instrumentalness) + (4.35 * liveness) + (-1.67 * valence) + (-1.54 * tempo) + (-1.96 * duration)
 ```
+
+Make a prediction with the model above
 
 ```{r}
-model <- rpart(formula = track_popularity ~ danceability + energy + loudness + speechiness + acousticness + instrumentalness + liveness + valence + tempo + time_signature, data = train_data)
-summary(model)
+predict(all_model, data.frame(danceability = 0.9, energy = 0.7, loudness = 0.3, speechiness = 0.1, acousticness = 0.1, instrumentalness = 0.00003, liveness = 0.02, valence = 0.5, tempo = 0.65, duration = 0.5))
+```
 
-pred <- predict(model, train_data)
+Based on this model, the popularity of a track with features where danceability is 0.9, energy is 0.7, loudness is 0.3, speechiness is 0.1, acousticness is 0.1, instrumentalness is 0.00003, liveness is 0.02, valence is 0.5, tempo is 0.65, and duration is 0.5 will have a popularity of approximately 81.
+
+<br>
+
+### Predict the track popularity using danceability, energy, liveness, and tempo
+
+```{r}
+delt_model <- lm(formula = track_popularity ~ danceability + energy + liveness + tempo, data = train_data)
+summary(delt_model)
+
+pred <- predict(delt_model, train_data)
 plot(pred - (train_data$track_popularity))
 ```
 
 
-```{r}
-# predict the track popularity using danceability, energy, tempo
-model <- lm(formula = track_popularity ~ danceability + energy + liveness + tempo, data = train_data)
-summary(model)
-
-pred <- predict(model, train_data)
-plot(pred - (train_data$track_popularity))
-```
-
-
+Make a prediction with the model above
 
 ```{r}
-# let's try to predict the same data that they use at the session
-predict(model, data.frame(danceability = 0.8, energy = 0.9, liveness = 0.1, tempo = 120, instrumentalness = 0000.1))
+predict(delt_model, data.frame(danceability = 0.5, energy = 0.9, liveness = 0.02, tempo = 0.8))
 ```
+
+Based on this model, the popularity of a track with features where danceability is 0.5, energy is 0.9, liveness is 0.02, and tempo is 0.8 will have a popularity of approximately 75.
 
 
 ## Logistic regression model (7 points)
