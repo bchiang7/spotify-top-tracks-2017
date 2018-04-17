@@ -13,3 +13,5 @@ I want to investigate this data and try to determine correlations and trends bet
 [Rubric](https://docs.google.com/spreadsheets/d/1-ExmjjTEE3MqZx30IjknJ8zjVrzV7lF9z0dNs94iJzE/edit?usp=sharing)
 
 [Slide Deck](https://docs.google.com/presentation/d/1Cl4MDQ4sT5aexGMreKPJFxeU_wHigYcV2NknR8Zg3fQ/edit?usp=sharing)
+
+[Presentation](https://youtu.be/juEBAASdRqE)
