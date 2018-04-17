@@ -5,7 +5,7 @@ output: html_notebook
 
 By Brittany Chiang
 
-[Spotify's Top Tracks of 2017](https://open.spotify.com/user/spotify/playlist/37i9dQZF1DX7Axsg3uaDZb?si=nlWdcezESwCW5HazmIGi8A)
+Data Set: [Spotify's Top Tracks of 2017](https://open.spotify.com/user/spotify/playlist/37i9dQZF1DX7Axsg3uaDZb?si=nlWdcezESwCW5HazmIGi8A)
 
 # Data Acquisition
 
