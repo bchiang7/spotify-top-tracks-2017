@@ -1,18 +1,20 @@
 ---
-title: "Top Tracks of 2017"
+title: "Spotify's Top Tracks of 2017"
 output: html_notebook
 ---
+
+By Brittany Chiang
 
 [Spotify's Top Tracks of 2017](https://open.spotify.com/user/spotify/playlist/37i9dQZF1DX7Axsg3uaDZb?si=nlWdcezESwCW5HazmIGi8A)
 
 # Data Acquisition
 
-## acquisition from API (8 points)
+## Acquisition from API (8 points)
 
 ```{r}
 library(devtools)
 library(stringdist)
-# devtools::install_github('charlie86/spotifyr')
+devtools::install_github('charlie86/spotifyr')
 library(spotifyr)
 
 # Set client ID
@@ -26,32 +28,32 @@ access_token <- get_spotify_access_token()
 playlist_username <- 'spotify'
 playlist_uris <- c("37i9dQZF1DX7Axsg3uaDZb")
 
-data <- get_playlist_audio_features('spotify', playlist_uris)
-
-write.csv(data, "top2017playlist.csv")
+raw_data <- get_playlist_audio_features('spotify', playlist_uris)
 ```
 
-<br/>
+------
 
-## acquisition from a file (4 points)
+## Acquisition from a file (4 points)
+
 ```{r}
+# write raw data to CSV
+write.csv(raw_data, "top2017playlist.csv")
+
+# pull in data from CSV and store in top2017 data frame
 top2017 <- read.csv("top2017playlist.csv", header = TRUE, sep = ",")
-colnames(top2017)[1] <- "rank"
 ```
 
-
+------
 
 # Data Exploration
 
 ```{r}
-library(ggplot2)
 library(dplyr)
 
 glimpse(top2017)
-summary(top2017)
 ```
 
-<br/>
+------
 
 # Data Cleaning & Shaping
 
@@ -64,21 +66,18 @@ top2017 <- subset(top2017, select = -c(playlist_name, playlist_uri, playlist_tra
 ```
 
 
-## Check for any NAs in the data frame
+## Check for any missing values in the data set
 
 ```{r}
-top2017NAs <- top2017[rowSums(is.na(top2017)) > 0,]
-
-top2017NAs
+library(Amelia)
+missmap(top2017, main = "Missing values vs observed")
 ```
 
-This is a pretty small and clean data set, and there's no NAs out of the 100 tracks in this playlist.
+This is a pretty small and clean data set, and there's no missing values out of the 100 tracks in this playlist.
 
-<br/>
+------
 
 ## Normalization/standardization of feature values (4 points)
-
-Convert `duration_ms` variable into seconds rather than milliseconds and turn loudness from negative to positive since quantitatively the smaller the loudness value louder a song is.
 
 ```{r}
 # convert milliseconds to seconds
@@ -87,23 +86,29 @@ top2017$duration_ms <- round(top2017$duration_ms / 1000)
 # rename column from 'duration_ms' to just 'duration'
 colnames(top2017)[17] <- "duration"
 
-# change loudness from negative to positive
+# change loudness from negative to positive values since quantitatively the smaller the loudness value louder a song is
 top2017$loudness <- - top2017$loudness
 
+# change name of first column to "rank"
+colnames(top2017)[1] <- "rank"
 ```
 
 
-<br/>
+------
 
-## Exploratory Data Plots (5 points) & Detection of Outliers (5 points)
+## Exploratory Data Plots (5 points)
 
 Full description of audio features: https://developer.spotify.com/web-api/get-several-audio-features/
 
 ```{r}
+library(ggplot2)
 # Set ggplot theme
 theme_set(theme_bw())
 ```
 
+------
+
+## Detection of Outliers (5 points)
 ```{r}
 # Gets outliers for a given column (outliers are 2 standard deviations from the mean)
 # Args: column (vector)
@@ -113,7 +118,7 @@ getOutliers <- function(column) {
 }
 ```
 
-<br/>
+------
 
 #### Artists with more than one track in the top 100 playlist
 
@@ -129,12 +134,11 @@ ggplot(top_artists, aes(x = reorder(artist_name,count), y = count)) +
   coord_flip() +
   labs(x = "Artist Name", y = "Number of Tracks", title = "Top Artists of 2017") +
   theme(legend.position = "none", plot.title = element_text(size = 14, face = "bold"))
-
 ```
 
 **Conclusion:** Post Malone, Kendrick Lamar, and Drake were the top artists of 2017
 
-<br/>
+------
 
 ### Danceability 
 Describes how suitable a track is for dancing based on a combination of musical elements including tempo, rhythm stability, beat strength, and overall regularity. A value of 0.0 is least danceable and 1.0 is most danceable.
@@ -149,7 +153,6 @@ ggplot(data=top2017, aes(danceability)) +
   theme(plot.title = element_text(size = 14, face = "bold")) +
   geom_density(col = 2)
 
-
 cat("Mean value of danceability: ", mean(danceability))
 
 cat("Number of danceability outliers: ", nrow(getOutliers(danceability)))
@@ -157,7 +160,7 @@ cat("Number of danceability outliers: ", nrow(getOutliers(danceability)))
 
 **Conclusion:** The more danceable the song, the more popular
 
-<br/>
+------
 
 ### Energy
 A measure from 0.0 to 1.0 and represents a perceptual measure of intensity and activity. Typically, energetic tracks feel fast, loud, and noisy. For example, death metal has high energy, while a Bach prelude scores low on the scale. Perceptual features contributing to this attribute include dynamic range, perceived loudness, timbre, onset rate, and general entropy.
@@ -172,7 +175,6 @@ ggplot(data=top2017, aes(energy)) +
   theme(plot.title = element_text(size = 14, face = "bold")) +
   geom_density(col = 2)
 
-
 cat("Mean value of energy: ", mean(energy))
 
 cat("Number of energy outliers: ", nrow(getOutliers(energy)))
@@ -180,7 +182,7 @@ cat("Number of energy outliers: ", nrow(getOutliers(energy)))
 
 **Conclusion:** The distribution of the energy of the top 100 tracks was relatively well dispersed, but mostly mid-to-high energy
 
-<br>
+------
 
 ### Keys of Top Songs
 
@@ -198,12 +200,11 @@ ggplot(song_keys, aes(x = reorder(key,-n_key), y = n_key, fill = reorder(key,-n_
   geom_text(aes(label = n_key), position = position_stack(vjust = 0.8)) +
   theme(plot.title = element_text(size = 14, face = "bold"), axis.title = element_text(size=12)) +
   theme(legend.title = element_blank())
-
 ```
 
 **Conclusion:** The most common key among the top 100 tracks of 2017 was C# (which is surprising!)
 
-<br>
+------
 
 ### Loudness
 The overall loudness of a track in decibels (dB). Loudness values are averaged across the entire track and are useful for comparing relative loudness of tracks. Loudness is the quality of a sound that is the primary psychological correlate of physical strength (amplitude). Values typical range between -60 and 0 db.
@@ -223,7 +224,6 @@ ggplot(top2017) +
   theme(legend.title = element_blank()) +
   scale_fill_brewer(palette = "Accent")
 
-
 cat("Mean value of loudness: ", mean(loudness))
 
 cat("Number of loudness outliers: ", nrow(getOutliers(loudness)))
@@ -231,7 +231,7 @@ cat("Number of loudness outliers: ", nrow(getOutliers(loudness)))
 
 **Conclusion:** The Top 100 Songs are mostly not so loud.
 
-<br>
+------
 
 
 ### Mode 
@@ -247,7 +247,7 @@ ggplot(data=top2017, aes(top2017$mode, ..count..)) +
 
 **Conclusion:** Major key tracks are preferred over minor key tracks. This is expected, since major key sounds happier than minor key.
 
-<br>
+------
 
 ### Speechiness 
 Detects the presence of spoken words in a track. The more exclusively speech-like the recording (e.g. talk show, audio book, poetry), the closer to 1.0 the attribute value. 
@@ -262,7 +262,6 @@ ggplot(data=top2017, aes(speechiness)) +
   theme(plot.title = element_text(size = 14, face = "bold")) +
   geom_density(col = 2)
 
-
 cat("Mean value of speechiness: ", mean(speechiness))
 
 cat("Number of speechiness outliers: ", nrow(getOutliers(speechiness)))
@@ -270,7 +269,7 @@ cat("Number of speechiness outliers: ", nrow(getOutliers(speechiness)))
 
 **Conclusion:** The top 100 tracks of 2017 did not contain many spoken words
 
-<br>
+------
 
 ### Acousticness 
 A confidence measure from 0.0 to 1.0 of whether the track is acoustic. 1.0 represents high confidence the track is acoustic.
@@ -293,7 +292,7 @@ cat("Number of acousticness outliers: ", nrow(getOutliers(acousticness)))
 
 **Conclusion:** The top 100 tracks of 2017 were mostly not very acoustic. People don't stream acoustic songs as much as non-acoustic ones.
 
-<br>
+------
 
 ### Liveness 
 Detects the presence of an audience in the recording. Higher liveness values represent an increased probability that the track was performed live. A value above 0.8 provides strong likelihood that the track is live.
@@ -308,7 +307,6 @@ ggplot(data=top2017, aes(liveness)) +
   theme(plot.title = element_text(size = 14, face = "bold")) +
   geom_density(col = 2)
 
-
 cat("Mean value of liveness: ", mean(liveness))
 
 cat("Number of liveness outliers: ", nrow(getOutliers(liveness)))
@@ -316,7 +314,7 @@ cat("Number of liveness outliers: ", nrow(getOutliers(liveness)))
 
 **Conclusion:** As expected, the mean value of liveness was very low, at 0.15. People go to concerts to listen to live music, not spotify.
 
-<br>
+------
 
 
 ### Valence 
@@ -332,7 +330,6 @@ ggplot(data=top2017, aes(valence)) +
   theme(plot.title = element_text(size = 14, face = "bold")) +
   geom_density(col = 2)
 
-
 cat("Mean value of valence: ", mean(valence))
 
 cat("Number of valence outliers: ", nrow(getOutliers(valence)))
@@ -341,7 +338,7 @@ cat("Number of valence outliers: ", nrow(getOutliers(valence)))
 
 **Conclusion:** Happy and sad songs are actually pretty normally distributed at 0.473. The distribution of happy and sad songs is pretty even.
 
-<br>
+------
 
 
 ### Tempo 
@@ -356,7 +353,6 @@ ggplot(data=top2017, aes(tempo)) +
   labs(x = "Tempo", y = "Count") +
   theme(plot.title = element_text(size = 14, face = "bold"))
 
-
 cat("Mean value of tempo: ", mean(tempo))
 
 cat("Number of tempo outliers: ", nrow(getOutliers(tempo)))
@@ -365,7 +361,7 @@ cat("Number of tempo outliers: ", nrow(getOutliers(tempo)))
 
 **Conclusion:** The most popular tempo of a track generally ranges between 100 BPM And 150 BPM.
 
-<br>
+------
 
 [Tempo Markings](https://en.wikipedia.org/wiki/Tempo)
 
@@ -380,9 +376,9 @@ cat("Number of tempo outliers: ", nrow(getOutliers(tempo)))
 * Presto – very, very fast (176–200 bpm)
 * Prestissimo – even faster than presto (200 bpm and over)
 
-<br>
+------
 
-## feature engineering: new derived features (4 points)
+## Feature engineering: new derived features (4 points)
 
 ```{r}
 # add a new column called tempo_marking based on grouping above
@@ -416,6 +412,8 @@ assignTempoMarking <- function(x) {
 top2017$tempo_marking <- apply(top2017, 1, assignTempoMarking)
 ```
 
+------
+
 Group tempo markings together to plot
 
 ```{r}
@@ -427,13 +425,13 @@ markings <- top2017 %>%
 
 ggplot(markings, aes(x = tempo_marking, y = n_marking, fill = tempo_marking)) +
   geom_bar(stat = "identity") +
-  labs(title = "Tempo Classification", x = "Classification", y = "Count") +
+  labs(title = "Tempo Markings", x = "Classification", y = "Count") +
   theme(plot.title = element_text(size = 14, face = "bold"), axis.title = element_text(size=12)) +
   theme(legend.title = element_blank())
 ```
 **Conclusion:** The most popular tempo classifications were allegro and andante (76-156 BPM)
 
-<br>
+------
 
 
 ### Duration (in seconds)
@@ -451,13 +449,12 @@ ggplot(data=top2017, aes(duration)) +
 cat("Mean value of duration: ", mean(duration))
 
 cat("Number of duration outliers: ", nrow(getOutliers(duration)))
-
 ```
 
 **Conclusion:** The mean duration of the top 100 tracks is 221 seconds, which is about 3 minutes and 41 seconds (3:41). People don't like songs that are too long.
 
 
-<br>
+------
 
 
 ### Time Signature
@@ -472,19 +469,17 @@ ggplot(data=top2017, aes(time_signature, ..count..)) +
   labs(x = "Time Signature", y = "Count") +
   theme(plot.title = element_text(size = 14, face = "bold"))
 
-
 cat("Mean value of time signature: ", mean(time_signature))
 
 cat("Number of time signature outliers: ", nrow(getOutliers(time_signature)))
-
 ```
 
 **Conclusion:** The majority of top 100 tracks are in a 4/4 time signature.
 
-<br>
+------
 
 
-Min-Max Normalization
+#### Min-Max Normalization
 
 ```{r}
 top2017numeric <- subset(top2017, select = -c(rank, track_name, artist_name, album_name, key, mode, time_signature, key_mode, tempo_marking))
@@ -494,6 +489,12 @@ minmax <- function(x) {
   (x - min(x)) / (max(x) - min(x))
 }
 
+top2017$track_popularity <- minmax(top2017numeric$track_popularity)
+top2017$loudness <- minmax(top2017numeric$loudness)
+top2017$tempo <- minmax(top2017numeric$tempo)
+top2017$duration <- minmax(top2017numeric$duration)
+
+top2017numeric$track_popularity <- minmax(top2017numeric$track_popularity)
 top2017numeric$loudness <- minmax(top2017numeric$loudness)
 top2017numeric$tempo <- minmax(top2017numeric$tempo)
 top2017numeric$duration <- minmax(top2017numeric$duration)
@@ -506,8 +507,8 @@ In order to understand the correlation between variables, I’ll use corrplot fu
 
 ```{r}
 library(corrplot)
-corNumeric <- cor(top2017numeric)
-corrplot(corNumeric, method= "ellipse", type = "upper", tl.srt=45)
+cor <- cor(top2017numeric)
+corrplot(cor, method= "ellipse", type = "upper", tl.srt = 45)
 ```
 
 It looks like `speechiness` and `loudness` are positively correlated with each other.
@@ -516,7 +517,7 @@ Also, `valence` is positively correlated with `danceability` and `energy`. Consi
 
 Interestingly enough, `energy` and `loudness` are very negatively correlated.
 
-<br>
+------
 
 As seen above, energy, valence, and danceability are positively correlated. Let’s see how these variables are distributed over 100 songs.
 
@@ -533,24 +534,10 @@ ggplot(top2017) +
         text = element_text(size = 12)) +
   theme(legend.title = element_blank()) +
   scale_fill_brewer(palette = "Pastel1")
-
-```
-
-<br>
-
-### Understanding the Most Important Factor
-In order to understand what makes Number 1 song better than the Number 100, I’ll add a “standings” column to the dataset, and look into the features that differentiates the best of the top songs lists from the rest of the list.
-
-```{r}
-library(rpart)
-# library(rpart.plot)
-top2017$rank <- c(1:100)
-tree_model <- rpart(rank ~ ., data = top2017)
-plot(tree_model, box.palette = "GnBu")
 ```
 
 
-<br>
+------
 
 # Data Storage and Retrieval
 
@@ -611,7 +598,7 @@ dbClearResult(res1)
 
 
 res2 <- dbSendQuery(db, "SELECT * FROM top2017numeric;")
-dataNumeric = fetch(res2, n = -1)
+data_num = fetch(res2, n = -1)
 dbClearResult(res2)
 ```
 
@@ -623,25 +610,28 @@ dbClearResult(res2)
 ```{r}
 pop <- dbSendQuery(db, "SELECT 
                         CASE
-                          WHEN track_popularity < 49 then '0 - 49'
-                          WHEN track_popularity between 50 and 59 then '50 - 59'
-                          WHEN track_popularity between 60 and 69 then '60 - 69'
-                          WHEN track_popularity between 70 and 79 then '70 - 79'
-                          WHEN track_popularity between 80 and 89 then '80 - 89'
-                          WHEN track_popularity between 90 and 100 then '90 - 100'
+                          WHEN track_popularity < 0.49 then '0 - 49'
+                          WHEN track_popularity between 0.50 and 0.59 then '50 - 59'
+                          WHEN track_popularity between 0.60 and 0.69 then '60 - 69'
+                          WHEN track_popularity between 0.70 and 0.79 then '70 - 79'
+                          WHEN track_popularity between 0.80 and 0.89 then '80 - 89'
+                          WHEN track_popularity between 0.90 and 1 then '90 - 100'
                           ELSE 'other'
-                        END as `range`, COUNT(*)
+                        END as `range`, COUNT(*) as Count
                         FROM top2017 
                         GROUP BY `range`;")
 
 pop_data <- fetch(pop, n = -1)
 
-pop_data
+ggplot(pop_data, aes(x = range, y = Count, fill = range)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Popularity Ranges", x = "Range", y = "Count") +
+  theme(plot.title = element_text(size = 14, face = "bold"), axis.title = element_text(size=12)) +
+  theme(legend.title = element_blank())
 
 ```
 
 ```{r}
-
 # group by mode
 mode <- dbSendQuery(db, "SELECT COUNT(*) as Count, Mode 
                          FROM top2017 
@@ -672,6 +662,7 @@ tempo_data
 ```
 
 
+------
 
 ### Once all data is retrieved, close the connection to the MySQL database
 
@@ -685,114 +676,320 @@ on.exit(dbDisconnect(db))
 ```
 
 
+
+
+------
+
+
+
 # Model Construction and Evaluation
 
 ## Training & validation subsets (5 points)
 
 ```{r}
 # 50% of the sample size
-smp_size <- floor(0.5 * nrow(dataNumeric))
+smp_size <- floor(0.5 * nrow(data))
 
-# set the seed to make your partition reproductible
+# set the seed to make your partition reproducible
 set.seed(123)
-train_ind <- sample(seq_len(nrow(dataNumeric)), size = smp_size)
+train_ind <- sample(seq_len(nrow(data)), size = smp_size)
 
 # training data set
-train_data <- dataNumeric[train_ind, ]
+train_data <- data[train_ind, ]
 
 # validation data set (all values not in the training data set)
-test_data <- dataNumeric[-train_ind, ]
+test_data <- data[-train_ind, ]
+
+# save off the test data track popularity column to use to check for the quality of the prediciton
+test_pop <- test_data$track_popularity
 ```
 
+------
 
 ## Multiple linear regression model (7 points)
 
-Multiple linear regression attempts to model the relationship between two or more explanatory variables and a response variable by fitting a linear equation to observed data. Every value of the independent variable x is associated with a value of the dependent variable y.
+Linear regression is one of the most widely known modeling techniques. It allows you, in short, to use a linear relationship to predict the (average) numerical value of Y for a given value of X with a straight line. This line is called the "regression line".
 
-Formula for multiple linear regression:  “YVAR ~ XVAR1 + XVAR2 + … + XVARi” where YVAR is the dependent, or predicted, variable and XVAR1, XVAR2, etc. are the independent, or predictor, variables.
+As a consequence, the linear regression model is `y = ax + b`. The model assumes that the response variable `y` is quantitative.
 
-### predict the track popularity using all other numeric variables
-
-```{r}
-all_model <- lm(formula = track_popularity ~ danceability + energy + loudness + speechiness + acousticness + instrumentalness + liveness + valence + tempo + duration, data = train_data)
-summary(all_model)
-
-pred <- predict(all_model, train_data)
-plot(pred - (train_data$track_popularity))
-```
-
-With an intercept of 63.2, the regression equation is:
-
-```
-Popularity = (11.04 * danceability) + (13.04 * energy) + (11.4 * loudness) + (-0.04 * speechiness) + (-11.0 * acousticness) + (-41.3 * instrumentalness) + (4.35 * liveness) + (-1.67 * valence) + (-1.54 * tempo) + (-1.96 * duration)
-```
-
-Make a prediction with the model above
+### Predict the track popularity using all other numeric variables
 
 ```{r}
-predict(all_model, data.frame(danceability = 0.9, energy = 0.7, loudness = 0.3, speechiness = 0.1, acousticness = 0.1, instrumentalness = 0.00003, liveness = 0.02, valence = 0.5, tempo = 0.65, duration = 0.5))
+linear_model <- lm(formula = track_popularity ~ danceability + energy + loudness + speechiness + acousticness + liveness + valence + tempo + duration, data = train_data)
+
+summary(linear_model)
+
+pred <- predict(linear_model, test_data)
+
+plot(pred - test_pop)
 ```
 
-Based on this model, the popularity of a track with features where danceability is 0.9, energy is 0.7, loudness is 0.3, speechiness is 0.1, acousticness is 0.1, instrumentalness is 0.00003, liveness is 0.02, valence is 0.5, tempo is 0.65, and duration is 0.5 will have a popularity of approximately 81.
-
-<br>
-
-### Predict the track popularity using danceability, energy, liveness, and tempo
+**Evaluation:** None of the p-values are significant (p < 0.05). R-squared and F-statistic are low (not significant)
 
 ```{r}
-delt_model <- lm(formula = track_popularity ~ danceability + energy + liveness + tempo, data = train_data)
-summary(delt_model)
+# https://stackoverflow.com/questions/5587676/pull-out-p-values-and-r-squared-from-a-linear-regression/35518814
+# gets the model p-value
+lmp <- function (modelobject) {
+  if (class(modelobject) != "lm") stop("Not an object of class 'lm' ")
+  f <- summary(modelobject)$fstatistic
+  p <- pf(f[1],f[2],f[3],lower.tail=F)
+  attributes(p) <- NULL
+  return(p)
+}
 
-pred <- predict(delt_model, train_data)
-plot(pred - (train_data$track_popularity))
+cat("p-value: ", lmp(linear_model))
 ```
 
-
-Make a prediction with the model above
+Make a forwards fitting prediction with the model above
 
 ```{r}
-predict(delt_model, data.frame(danceability = 0.5, energy = 0.9, liveness = 0.02, tempo = 0.8))
+prediction <- predict(linear_model, data.frame(danceability = 0.9, energy = 0.8, loudness = 0.4, speechiness = 0.1, acousticness = 0.1, liveness = 0.1, valence = 0.5, tempo = 0.7, duration = 0.6))
+
+cat("Prediction of track popularity: ", prediction)
 ```
 
-Based on this model, the popularity of a track with features where danceability is 0.5, energy is 0.9, liveness is 0.02, and tempo is 0.8 will have a popularity of approximately 75.
+Backwards fitting
+
+```{r}
+prediction <- predict(linear_model, data.frame(danceability = 0.1, energy = 0.2, loudness = 0.9, speechiness = 0.8, acousticness = 0.9, liveness = 0.8, valence = 0.1, tempo = 0.95, duration = 0.98))
+
+cat("Prediction of track popularity: ", prediction)
+```
+
+------
+
+### Predict the track popularity using danceability, speechiness, acousticness, and liveness
+
+```{r}
+linear_model <- lm(formula = track_popularity ~ danceability + speechiness + acousticness + liveness, data = train_data)
+
+summary(linear_model)
+
+pred <- predict(linear_model, test_data)
+
+plot(pred - test_pop)
+```
+
+**Evaluation:** None of the p-values are significant. R squared is low. F-statistic is okay (0.7299).
+
+```{r}
+cat("p-value: ", lmp(linear_model))
+```
+
+Make a forwards fitting prediction with the model above
+
+```{r}
+prediction <- predict(linear_model, data.frame(danceability = 0.9, speechiness = 0.1, acousticness = 0.1, liveness = 0.1))
+
+cat("Prediction of track popularity: ", prediction)
+```
+
+Backwards fitting
+
+```{r}
+prediction <- predict(linear_model, data.frame(danceability = 0.1, speechiness = 0.8, acousticness = 0.8, liveness = 0.8))
+
+cat("Prediction of track popularity: ", prediction)
+```
+
+
+------
 
 
 ## Logistic regression model (7 points)
-```{r}
 
+Logistic regression is an instance of classification technique that you can use to predict a qualitative response.
+
+```{r}
+logistic_model <- glm(formula = track_popularity ~ danceability + energy + loudness + speechiness + acousticness + liveness + valence + tempo + duration, data = train_data, family = binomial(link='logit'))
+
+summary(logistic_model)
+
+pred <- predict(logistic_model, test_data)
+
+plot(pred - test_pop)
 ```
 
 
-## kNN model for regression or classification (7 points)
+Analyze the table of deviance
+
 ```{r}
-library(class)
+anova(logistic_model, test="Chisq")
+```
 
+**Evaluation:** None of the p-values are significant.
 
+------
+
+Make a forwards fitting prediction with the model above
+
+```{r}
+prediction <- predict(logistic_model, data.frame(danceability = 0.9, energy = 0.8, loudness = 0.4, speechiness = 0.1, acousticness = 0.1, liveness = 0.1, valence = 0.5, tempo = 0.7, duration = 0.6))
+
+cat("Prediction of track popularity: ", prediction)
+```
+
+Backwards fitting
+
+```{r}
+prediction <- predict(logistic_model, data.frame(danceability = 0.1, energy = 0.2, loudness = 0.9, speechiness = 0.8, acousticness = 0.9, liveness = 0.8, valence = 0.1, tempo = 0.95, duration = 0.98))
+
+cat("Prediction of track popularity: ", prediction)
 ```
 
 
-## Naive Bayes for classification (7 points)
-```{r}
+### Predict the track popularity using danceability, speechiness, acousticness, and liveness
 
+```{r}
+logistic_model <- glm(formula = track_popularity ~ danceability + speechiness + acousticness + liveness, data = train_data, family = binomial(link='logit'))
+
+summary(logistic_model)
+
+pred <- predict(logistic_model, test_data)
+
+plot(pred - test_pop)
+```
+
+
+Analyze the table of deviance
+
+```{r}
+anova(logistic_model, test="Chisq")
+```
+
+**Evaluation:** None of the p-values are significant.
+
+------
+
+Make a forwards fitting prediction with the model above
+
+```{r}
+prediction <- predict(logistic_model, data.frame(danceability = 0.9, speechiness = 0.1, acousticness = 0.1, liveness = 0.1))
+
+cat("Prediction of track popularity: ", prediction)
+```
+
+Backwards fitting
+
+```{r}
+prediction <- predict(logistic_model, data.frame(danceability = 0.1, speechiness = 0.8, acousticness = 0.8, liveness = 0.8))
+
+cat("Prediction of track popularity: ", prediction)
+```
+
+------
+
+## Recursive Partitioning and Regression Trees (Other, 5 points)
+
+```{r}
+library(rpart)
+
+rpart_model <- rpart(formula = track_popularity ~ danceability + energy + loudness + speechiness + acousticness + liveness + valence + tempo + duration, data = train_data, method = "anova")
+
+# detailed results including surrogate splits
+summary(rpart_model)
+
+pred <- predict(rpart_model, test_data)
+
+# plot cross-validation results
+plotcp(rpart_model)	
+
+# plot approximate R-squared and relative error for different splits (2 plots). labels are only appropriate for the "anova" method.
+rsq.rpart(rpart_model)
+
+# plot decision tree
+plot(rpart_model)
+text(rpart_model)
+```
+
+**Evaluation:** None of the p-values are significant.
+
+Make a forwards fitting prediction with the model above
+
+```{r}
+prediction <- predict(rpart_model, data.frame(danceability = 0.9, energy = 0.8, loudness = 0.4, speechiness = 0.1, acousticness = 0.1, liveness = 0.1, valence = 0.5, tempo = 0.7, duration = 0.6))
+
+cat("Prediction of track popularity: ", prediction)
+```
+
+Backwards fitting
+
+```{r}
+prediction <- predict(rpart_model, data.frame(danceability = 0.1, energy = 0.2, loudness = 0.9, speechiness = 0.8, acousticness = 0.9, liveness = 0.8, valence = 0.1, tempo = 0.95, duration = 0.98))
+
+cat("Prediction of track popularity: ", prediction)
 ```
 
 
 
-## evaluation of fit of model (5 points)
-```{r}
+------
 
+
+
+### Predict the track popularity using danceability, speechiness, acousticness, and liveness
+
+```{r}
+rpart_model <- rpart(formula = track_popularity ~ danceability + speechiness + acousticness + liveness, data = train_data, method = "anova")
+
+# detailed results including surrogate splits
+summary(rpart_model)
+
+pred <- predict(rpart_model, test_data)
+
+# plot cross-validation results
+plotcp(rpart_model)	
+
+# plot approximate R-squared and relative error for different splits (2 plots). labels are only appropriate for the "anova" method.
+rsq.rpart(rpart_model)
+
+# plot decision tree
+plot(rpart_model)
+text(rpart_model)
 ```
 
 
-## comparison of models (5 points)
-```{r}
+**Evaluation:** None of the p-values are significant.
 
+------
+
+Make a forwards fitting prediction with the model above
+
+```{r}
+prediction <- predict(rpart_model, data.frame(danceability = 0.9, speechiness = 0.1, acousticness = 0.1, liveness = 0.1))
+
+cat("Prediction of track popularity: ", prediction)
+```
+
+Backwards fitting
+
+```{r}
+prediction <- predict(rpart_model, data.frame(danceability = 0.1, speechiness = 0.8, acousticness = 0.8, liveness = 0.8))
+
+cat("Prediction of track popularity: ", prediction)
 ```
 
 
-## interpretation of results/prediction with interval (5 points)
-```{r}
 
+## Evaluation of fit of model (5 points) & Comparison of models (5 points) & Interpretation of results/prediction with interval (5 points)
+
+In the models I constructed, my independent variable was always track popularity. Each prediction I made was predicting the popularity of the track given different dependent variables.
+
+None of the models constructed above had p-values that were significant (p < 0.05). For each type of model, constructed two models and two predictions for each (four predictions per type of model).
+
+The first model included nearly all of the numeric audio features of the tracks:
+```
+track_popularity ~ danceability + energy + loudness + speechiness + acousticness + liveness + valence + tempo + duration
 ```
 
+The second model only included danceability, speechiness, acousticness, and liveness as the dependent variables.
+```
+track_popularity ~ danceability + speechiness + acousticness + liveness
+```
 
+For both models of each model type, I conducted forward fitting and backwards fitting predictions. Basically, for the forward fitting predictions, I plugged in values that I thought would make the track popular (high danceability, low acousticness, low liveness, etc.). For the backwards fitting predictions, I plugged in values that I thought would make the track less popular (low danceability, high speechiness, etc.). These values were just estimations based on the data understanding and data preparation steps conducted before the model construction & evaluation section.
+
+Overall, none of the models constructed were statistically significant (p < 0.05), but the model that was closest to being significant was the second multiple linear regression model based on the `danceability`, `speechiness`, `acousticness`, and `liveness` variables. The p-value of this model was 0.57.
+
+------
+
+Link to my slide deck: https://docs.google.com/presentation/d/1Cl4MDQ4sT5aexGMreKPJFxeU_wHigYcV2NknR8Zg3fQ/edit?usp=sharing
